@@ -9,4 +9,5 @@ test('child care search', async ({ page }) => {
 
   const searchPage = new SearchPage(page)
   await searchPage.search()
+  await searchPage.paginate()
 })

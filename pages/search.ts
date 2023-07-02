@@ -12,6 +12,7 @@ async function child(row: Locator, child: number) {
 }
 
 type Item = {
+  index: number,
   name: string
   address: string
   city: string
@@ -22,6 +23,7 @@ type Item = {
 
 export class SearchPage {
   readonly page: Page
+  private index: number
   public items: Item[] = []
 
   constructor(page: Page) {
@@ -32,16 +34,35 @@ export class SearchPage {
     await this.page.click('#formActions')
     await this.page.waitForLoadState()
     await this.page.screenshot({path:'screenshot-search.png'})
+    await this.capture()
+  }
 
-    // await page.locator('.resultsListRow').waitFor()
+  async paginate() {
+    const css = '.NextLast a:first-child'
+    if (this.page.locator(css)) {
+      await this.page.click(css)
+      await this.page.waitForLoadState()
+      await this.capture()
+      await this.page.screenshot({path:`screenshot-page-${this.index}.png`})
+      await this.paginate()
+    }
+  }
+
+  async capture() {
     const results = this.page.locator('.resultsListRow')
     const rows = await results.all()
     console.warn('Rows:', rows.length)
     await expect(results).toHaveCount(20)
 
+    const params = new URL(this.page.url()).searchParams
+    this.index = parseInt(params.get('p') || '0')
+
+    const items: Item[] = []
+
     for (const row of rows) {
       const stars = row.locator('div:nth-child(7) > .SUTQStarRating')
       const item: Item = {
+        index: this.index,
         name: await child(row, 2),
         address: await child(row, 3),
         city: await child(row, 4),
@@ -49,9 +70,9 @@ export class SearchPage {
         type: await scrape(row, 'div:nth-child(6) > .desktopOnlyDisplay'),
         rating: (await stars.all()).length,
       }
-      console.log(row, item)
-      this.items.push(item)
+      items.push(item)
     }
-    console.log(this.items, this.items.length)
+    console.log(typeof this.items, this.items.length, items[0])
+    this.items.push(...items)
   }
 }
