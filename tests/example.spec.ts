@@ -7,7 +7,7 @@ function createAbsoluteUrl(base: string, relative: string): string {
   return absoluteUrl.href;
 }
 
-test('has title', async ({ page }) => {
+test('child care search', async ({ page }) => {
   await page.goto(url);
 
   // Expect a title "to contain" a substring.
@@ -21,16 +21,5 @@ test('has title', async ({ page }) => {
   const rows = await results.all()
   console.warn('Rows:', rows.length)
   await expect(results).toHaveCount(20)
-
-  for (const row of rows) {
-    const result = row.locator('.resultsListColumn a')
-    const href = await result.getAttribute('href') as string
-    const absoluteUrl = createAbsoluteUrl(page.url(), href);
-    console.log(typeof absoluteUrl, absoluteUrl)
-
-    await page.goto(href)
-    await page.screenshot({path:'screenshot2.png'})
-
-  }
 
 });
