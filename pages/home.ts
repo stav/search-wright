@@ -6,7 +6,6 @@ const url = 'http://childcaresearch.ohio.gov/'
 
 export class HomePage {
   readonly page: Page
-  public results: []
 
   constructor(page: Page) {
     this.page = page

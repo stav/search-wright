@@ -22,7 +22,7 @@ type Item = {
 
 export class SearchPage {
   readonly page: Page
-  public results: []
+  public items: Item[] = []
 
   constructor(page: Page) {
     this.page = page;
@@ -38,6 +38,7 @@ export class SearchPage {
     const rows = await results.all()
     console.warn('Rows:', rows.length)
     await expect(results).toHaveCount(20)
+
     for (const row of rows) {
       const stars = row.locator('div:nth-child(7) > .SUTQStarRating')
       const item: Item = {
@@ -49,6 +50,8 @@ export class SearchPage {
         rating: (await stars.all()).length,
       }
       console.log(row, item)
+      this.items.push(item)
     }
+    console.log(this.items, this.items.length)
   }
 }
