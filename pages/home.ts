@@ -14,6 +14,6 @@ export class HomePage {
   async open() {
     await this.page.goto(url)
     await expect(this.page).toHaveTitle(/Ohio Child Care Search/)
-    await this.page.screenshot({path:'screenshot-open.png'})
+    await this.page.screenshot({path:'./test-results/screenshot-open.png'})
   }
 }

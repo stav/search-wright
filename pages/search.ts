@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 
 import type { Locator, Page } from '@playwright/test'
 
+import { writeFile } from 'fs/promises'
+
 async function scrape(row: Locator, css: string) {
   const result = await row.locator(css).textContent() as string
   return result.trim()
@@ -33,7 +35,7 @@ export class SearchPage {
   async search() {
     await this.page.click('#formActions')
     await this.page.waitForLoadState()
-    await this.page.screenshot({path:'screenshot-search.png'})
+    await this.page.screenshot({path:'./test-results/screenshot-search.png'})
     await this.capture()
   }
 
@@ -43,7 +45,7 @@ export class SearchPage {
       await this.page.click(css)
       await this.page.waitForLoadState()
       await this.capture()
-      await this.page.screenshot({path:`screenshot-page-${this.index}.png`})
+      await this.page.screenshot({path:`./test-results/screenshot-page-${this.index}.png`})
       await this.paginate()
     }
   }
@@ -73,6 +75,8 @@ export class SearchPage {
       items.push(item)
     }
     console.log(typeof this.items, this.items.length, items[0])
+    const content = JSON.stringify(items)
+    await writeFile(`./test-results/search-page-${this.index}.json`, content)
     this.items.push(...items)
   }
 }
