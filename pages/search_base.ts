@@ -8,6 +8,7 @@ export class SearchBase {
   readonly page: Page
   protected index: number = 0
   protected lastIndex: number
+  public searchUrl: URL
 
   protected pindex() {
     return `${this.index}`.padStart(3, '0')

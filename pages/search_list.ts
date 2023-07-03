@@ -4,10 +4,10 @@ import { expect } from '@playwright/test'
 import { writeFile } from 'fs/promises'
 
 import type { Item } from '.'
-import { SearchBase } from './search-base'
+import { SearchBase } from './search_base'
 import { scrape, child } from './utils'
 
-export class SearchPage extends SearchBase {
+export class SearchListPage extends SearchBase {
 
   constructor(page: Page) {
     super(page)
@@ -19,6 +19,7 @@ export class SearchPage extends SearchBase {
     await this.page.locator('.NextLast').waitFor()
 
     await this.saveLastIndex()
+    this.searchUrl = new URL(this.page.url())
 
     const nextCachedIndex = await this.getNextCachedIndex()
     if (nextCachedIndex) {
