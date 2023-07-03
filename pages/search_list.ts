@@ -40,14 +40,20 @@ export class SearchListPage extends SearchBase {
 
   async getItem(row: Locator): Promise<Item> {
     const stars = await row.locator('div:nth-child(7) > .SUTQStarRating').all()
+    const url = await this.getUrlFromCss('.programListColumnName a', row)
+    const provider = url.href.match("/provider/([0-9]+)/") || [null, url.href]
     return {
       index: this.index,
+      provider: provider[1],
       name: await child(row, 2),
       address: await child(row, 3),
       city: await child(row, 4),
       zip: await child(row, 5),
       type: await scrape(row, 'div:nth-child(6) > .desktopOnlyDisplay'),
       rating: stars.length,
+      county: undefined,
+      phone: undefined,
+      admin: undefined,
     }
   }
 
