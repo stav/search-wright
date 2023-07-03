@@ -41,6 +41,10 @@ export class SearchPage {
     this.index = index
   }
 
+  private async screenshot() {
+    await this.page.screenshot({path:`./test-results/screenshot-page-${this.pindex()}.png`})
+  }
+
   async search() {
     await this.page.click('#formActions')
     await this.page.waitForLoadState()
@@ -49,7 +53,7 @@ export class SearchPage {
     if (nextCachedIndex) {
       await this.gotoIndex(nextCachedIndex)
     }
-    await this.page.screenshot({path:`./test-results/screenshot-page-${this.pindex()}.png`})
+    await this.screenshot()
     await this.capture()
   }
 
@@ -58,8 +62,8 @@ export class SearchPage {
     if (this.page.locator(css)) {
       await this.page.click(css)
       await this.page.waitForLoadState()
+      await this.screenshot()
       await this.capture()
-      await this.page.screenshot({path:`./test-results/screenshot-page-${this.pindex()}.png`})
       await this.paginate()
     }
   }
