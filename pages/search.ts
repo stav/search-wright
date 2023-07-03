@@ -1,23 +1,14 @@
-import { expect } from '@playwright/test'
-
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { readdir, writeFile } from 'fs/promises'
 
 import type { Item } from '.'
 
-async function scrape(row: Locator, css: string) {
-  const result = await row.locator(css).textContent() as string
-  return result.trim()
-}
-
-async function child(row: Locator, child: number) {
-  return await scrape(row, `div:nth-child(${child})`)
-}
+import { scrape, child } from './utils'
 
 export class SearchPage {
   readonly page: Page
-  private index: number
+  private index: number = 0
   public items: Item[] = []
 
   private pindex() {
@@ -32,7 +23,7 @@ export class SearchPage {
       // Check for previous run
       const files = await readdir('./test-data')
       files.sort().reverse()
-      console.log(files)
+      console.log(files, files.length)
       if (files.length) {
         const file = files[0]
         const parts = file.split('-')
@@ -41,23 +32,24 @@ export class SearchPage {
       }
   }
 
+  private async gotoIndex(index: number) {
+    const url = new URL(this.page.url())
+    url.searchParams.set('p', `${index}`)
+    console.log('goto index:', typeof index, index, url.href)
+    this.page.goto(url.href)
+    await this.page.locator('.FirstPrev').waitFor()
+    this.index = index
+  }
+
   async search() {
     await this.page.click('#formActions')
     await this.page.waitForLoadState()
 
     const nextCachedIndex = await this.getNextCachedIndex()
     if (nextCachedIndex) {
-      const url = new URL(this.page.url())
-      url.searchParams.set('p', `${nextCachedIndex}`)
-      console.log('GET NEXT!!', typeof nextCachedIndex, nextCachedIndex, url.href)
-      this.index = nextCachedIndex
-      this.page.goto(url.href)
-      const firstNav = this.page.locator('.FirstPrev')
-      await firstNav.waitFor()
-      await this.page.screenshot({path:`./test-results/screenshot-page-${this.pindex()}.png`})
-    } else {
-      await this.page.screenshot({path:'./test-results/screenshot-search.png'})
+      await this.gotoIndex(nextCachedIndex)
     }
+    await this.page.screenshot({path:`./test-results/screenshot-page-${this.pindex()}.png`})
     await this.capture()
   }
 
