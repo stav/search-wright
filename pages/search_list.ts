@@ -1,5 +1,4 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
 
 import { writeFile } from 'fs/promises'
 
@@ -38,7 +37,7 @@ export class SearchListPage extends SearchBase {
     }
   }
 
-  async getItem(row: Locator): Promise<Item> {
+  private async getItem(row: Locator): Promise<Item> {
     const stars = await row.locator('div:nth-child(7) > .SUTQStarRating').all()
     const url = await this.getUrlFromCss('.programListColumnName a', row)
     const provider = url.href.match("/provider/([0-9]+)/") || [null, url.href]

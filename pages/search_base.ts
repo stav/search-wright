@@ -49,7 +49,7 @@ export class SearchBase {
     const url = new URL(this.page.url())
     url.searchParams.set('p', `${index}`)
     console.log('goto index:', typeof index, index, url.href)
-    this.page.goto(url.href)
+    await this.page.goto(url.href)
     await this.page.locator('.FirstPrev').waitFor()
     this.index = index
   }

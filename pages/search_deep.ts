@@ -1,7 +1,4 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
-import { readdir, readFile } from 'fs/promises'
+import { readdir, readFile, writeFile } from 'fs/promises'
 
 import type { Item } from '.'
 import { SearchBase } from './search_base'
@@ -9,17 +6,32 @@ import { SearchListPage } from './search_list'
 
 export class SearchDeepPages extends SearchBase {
 
+  q: string | null
+
   constructor(search: SearchListPage) {
     super(search.page)
     this.searchUrl = search.searchUrl
+    this.q = this.searchUrl.searchParams.get('q')
   }
 
   async grabInfo(label: string) {
     const fieldRow = this.page.locator('.detailRow').filter({hasText: label})
-    console.log('countyRow:', typeof fieldRow, fieldRow)
     const field = await fieldRow.locator('.detailInfo').textContent()
-    console.log('county:', typeof field, field)
     return field?.trim()
+  }
+
+  private async getItem(p: Item): Promise<Item> {
+    const url = new URL(`/provider/${p.provider}/?q=${this.q}`, this.searchUrl)
+    await this.page.goto(url.href)
+    await this.page.waitForLoadState()
+    await this.page.locator('.detailGroupContainer').waitFor()
+    await this.page.screenshot({path:`./test-results/screenshot-${this.pindex()}-provider-${p.provider}.png`})
+
+    p.county = await this.grabInfo('County:')
+    p.admin = await this.grabInfo('Administrator(s):')
+    p.phone = await this.grabInfo('Phone:')
+
+    return p
   }
 
   async search() {
@@ -29,29 +41,23 @@ export class SearchDeepPages extends SearchBase {
     console.log('Url:', this.searchUrl)
 
     for (const file of files) {
-      const q = this.searchUrl.searchParams.get('q')
 
       const path = `./test-data/${file}`
       const json = await readFile(path) as unknown as string
       console.log('JSON', typeof json, json.length)
-      const providers = JSON.parse(json)
+      const providers: Item[] = JSON.parse(json)
       console.log('providers:', providers.length)
 
       const items: Item[] = []
 
-      for (const p of providers) {
-        const url = new URL(`/provider/${p.provider}/?q=${q}`, this.searchUrl)
-        console.log('provider:', url.href)
-        this.page.goto(url.href)
-        await this.page.waitForLoadState()
-        await this.page.screenshot({path:`./test-results/screenshot-${this.pindex()}-provider-${p.provider}.png`})
-
-        p.county = await this.grabInfo('County:')
-        p.admin = await this.grabInfo('Administrator(s):')
-        p.phone = await this.grabInfo('Phone:')
-
-        console.log('Item:', p)
+      for (const provider of providers) {
+        items.push(await this.getItem(provider))
       }
+      console.log('Capture providers', items.length, items[0])
+      const content = JSON.stringify(items)
+      const index = file.match(/search-page-(\d\d\d).json/) || []
+
+      await writeFile(`./test-data/search-deep-${index[1]}.json`, content)
     }
   }
 }
