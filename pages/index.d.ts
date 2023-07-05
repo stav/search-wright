@@ -1,3 +1,7 @@
+export type Student = {
+  [index: string]: any
+}
+
 export type Item = {
   index: number
   provider: string
@@ -10,4 +14,5 @@ export type Item = {
   county: string | undefined
   admin: string | undefined
   phone: string | undefined
+  student: Student | undefined
 }

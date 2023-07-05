@@ -16,10 +16,11 @@ export class SearchListPage extends SearchBase {
     await this.page.click('#formActions')
     await this.page.waitForLoadState()
     await this.page.locator('.NextLast').waitFor()
-
     await this.saveLastIndex()
     this.searchUrl = new URL(this.page.url())
+  }
 
+  async scrape() {
     const nextCachedIndex = await this.getNextCachedIndex()
     if (nextCachedIndex) {
       await this.gotoIndex(nextCachedIndex)
@@ -50,6 +51,7 @@ export class SearchListPage extends SearchBase {
       zip: await child(row, 5),
       type: await scrape(row, 'div:nth-child(6) > .desktopOnlyDisplay'),
       rating: stars.length,
+      student: undefined,
       county: undefined,
       phone: undefined,
       admin: undefined,
