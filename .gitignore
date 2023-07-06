@@ -1,6 +1,7 @@
 node_modules/
 /test-data*
 /test-results/
+/tests-examples/
 /playwright-report/
 /playwright/.cache/
 *.png
