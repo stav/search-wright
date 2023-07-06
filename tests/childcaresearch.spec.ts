@@ -5,8 +5,9 @@ import { SearchListPage } from '../pages/search_list'
 import { SearchDeepPages } from '../pages/search_deep'
 
 test('child care search', async ({ page }) => {
-  // test.setTimeout(2 * 60 * 1000);
-  // test.slow()
+  // Default timeout: 30 seconds
+  // test.slow() // 90 seconds
+  test.setTimeout(2 * 60 * 1000) // 120 seconds
 
   const homePage = new HomePage(page)
   await homePage.open()

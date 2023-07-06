@@ -16,22 +16,6 @@ export class SearchDeepPages extends SearchBase {
     this.q = this.searchUrl.searchParams.get('q')
   }
 
-  async grabInfo(label: string) {
-    const fieldRow = this.page.locator('.detailRow').filter({hasText: label})
-    const field = await fieldRow.locator('.detailInfo').textContent()
-    return field?.trim()
-  }
-
-  async grabUrl(label: string) {
-    const fieldRow = this.page.locator('.detailRow').filter({hasText: label})
-    const href = await fieldRow.locator('.detailInfo a').getAttribute('href')
-    if (href) {
-      return new URL(href, this.searchUrl)
-    } else {
-      throw new Error('No inspection link')
-    }
-  }
-
   private async parsePdf(item: Item) {
     const anchor = this.page.locator('a', {hasText: 'Full Report'}).first()
     const href = await anchor.getAttribute('href')
@@ -41,19 +25,44 @@ export class SearchDeepPages extends SearchBase {
     const path = await download.path()
     await download.saveAs(`./test-results/inspections-provider-${item.provider}.pdf`);
     const buffer = path as unknown as Buffer
-    const options = {max: 1} // max pages
+    const options = {max: 2} // max pages
     const pdf = await pdfParse(buffer, options)
-    const s = ['Infant', 'Young Toddler', 'Total Under', 'Older Toddler', 'Preschool', 'School Age', 'Total Capacity']
+    const s = [
+      'Infant',
+      'Young Toddler',
+      'Total Under',
+      'Older Toddler',
+      'Preschool',
+      'School Age',
+      'Total Capacity',
+    ]
     const lines = pdf.text.split('\n').filter(line => s.some(v => line.includes(v)))
-    item.student = {href, path, lines}
+    // Get rid of any lines after the totals line
+    for (let i=0; i<lines.length; i++) {
+      if (lines[i].includes('Total Capacity')) {
+        lines.splice(i+1)
+      }
+    }
+    // Parse the totals line
+    const totalLine = lines.filter(line => line.includes('Total Capacity'))
+    let totalMatch: Array<string>
+    totalMatch = totalLine[0]?.match(/(\d+)\s+\d+\s+\d+\s+(\d+)\s*$/) || []
+    item.student = {
+      capacity: parseInt(totalMatch[1]),
+      enrollment: parseInt(totalMatch[2]),
+      href,
+      path,
+      lines,
+    }
   }
 
   private async getItem(p: Item): Promise<Item> {
 
     // Grab provider info: county, adminm phone
+    let url: URL | null | undefined
 
     // Go to the provider page
-    let url = new URL(`/provider/${p.provider}/?q=${this.q}`, this.searchUrl)
+    url = new URL(`/provider/${p.provider}/?q=${this.q}`, this.searchUrl)
     await this.page.goto(url.href)
     await this.page.waitForLoadState()
     await this.page.locator('.detailGroupContainer').waitFor()
@@ -65,14 +74,28 @@ export class SearchDeepPages extends SearchBase {
     // Grab inspections info: number of students
 
     // Go to the inspections page
-    url = await this.grabUrl('Current Inspections:')
+    try {
+      url = await this.grabUrl('Current Inspections:')
+    } catch (error) {
+      url = null
+    }
+    if (!url) {
+      p.student = {message: 'No inspection link'}
+      return p
+    }
     await this.page.goto(url.href)
     await this.page.waitForLoadState()
-    await this.page.locator('.resultsList').waitFor()
+    await this.page.locator('#inspectionsHeader').waitFor()
     await this.page.screenshot({path:`./test-results/screenshot-provider-${p.provider}-inspect.png`})
-
     // Parse the PDF
-    await this.parsePdf(p)
+    const results = await this.page.locator('.resultsList').count()
+    const reports = await this.page.locator('a', {hasText: 'Full Report'}).count()
+    console.log('results', results, 'reports', reports)
+    if (results && reports) {
+      await this.parsePdf(p)
+    } else {
+      p.student = {message: 'No inspection reports', results, reports}
+    }
 
     return p
   }

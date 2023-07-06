@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
+import { errors, expect } from '@playwright/test'
 
 import { readdir } from 'fs/promises'
 
@@ -16,6 +16,29 @@ export class SearchBase {
 
   constructor(page: Page) {
     this.page = page;
+  }
+
+  protected async grabInfo(label: string) {
+    const timeout = 3000
+    const fieldRow = this.page.locator('.detailRow').filter({hasText: label})
+    let field: string | null = null
+    try {
+      field = await fieldRow.locator('.detailInfo').textContent({timeout})
+    } catch (error) {
+      if (!(error instanceof errors.TimeoutError))
+        throw error
+    }
+    return field?.trim()
+  }
+
+  protected async grabUrl(label: string) {
+    const timeout = 3000
+    const href = await this.page
+      .locator('.detailInfo a')
+      .filter({hasText: 'View Current Inspections'})
+      .getAttribute('href', {timeout})
+    if (href)
+      return new URL(href, this.searchUrl)
   }
 
   protected async getUrlFromCss(css: string, target?: Locator) {
