@@ -1,5 +1,7 @@
 import { readdir, readFile, writeFile } from 'fs/promises'
 
+import pdfParse from 'pdf-parse'
+
 import type { Item, Student } from '.'
 import { SearchBase } from './search_base'
 import { SearchListPage } from './search_list'
@@ -30,6 +32,22 @@ export class SearchDeepPages extends SearchBase {
     }
   }
 
+  private async parsePdf(item: Item) {
+    const anchor = this.page.locator('a', {hasText: 'Full Report'}).first()
+    const href = await anchor.getAttribute('href')
+    const downloadPromise = this.page.waitForEvent('download')
+    await anchor.click()
+    const download = await downloadPromise
+    const path = await download.path()
+    await download.saveAs(`./test-results/inspections-provider-${item.provider}.pdf`);
+    const buffer = path as unknown as Buffer
+    const options = {max: 1} // max pages
+    const pdf = await pdfParse(buffer, options)
+    const s = ['Infant', 'Young Toddler', 'Total Under', 'Older Toddler', 'Preschool', 'School Age', 'Total Capacity']
+    const lines = pdf.text.split('\n').filter(line => s.some(v => line.includes(v)))
+    item.student = {href, path, lines}
+  }
+
   private async getItem(p: Item): Promise<Item> {
 
     // Grab provider info: county, adminm phone
@@ -53,24 +71,8 @@ export class SearchDeepPages extends SearchBase {
     await this.page.locator('.resultsList').waitFor()
     await this.page.screenshot({path:`./test-results/screenshot-provider-${p.provider}-inspect.png`})
 
-    // Get the PDF link
-    // const anchor = this.page.getByText('Full Report').first()
-    // const html = await locator.evaluate(node => node.outerHTML)
-    const anchor = this.page.locator('a', {hasText: 'Full Report'}).first()
-    const href = await anchor.getAttribute('href')
-    let student: Student
-
-    // Go to the PDF
-    if (href) {
-      // url = new URL(href, this.searchUrl)
-      // await this.page.goto(url.href)
-      const downloadPromise = this.page.waitForEvent('download')
-      await anchor.click()
-      const download = await downloadPromise
-      // await this.page.waitForLoadState()
-      // await this.page.screenshot({path:`./test-results/screenshot-provider-${p.provider}-pdf.png`})
-      p.student = {href, path: await download.path()}
-    }
+    // Parse the PDF
+    await this.parsePdf(p)
 
     return p
   }
