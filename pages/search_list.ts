@@ -33,6 +33,7 @@ export class SearchListPage extends SearchBase {
   async paginate() {
     if (this.index < this.lastIndex) {
       await this.gotoIndex(this.index + 1)
+      await this.delay(1000)
       await this.capture()
       await this.paginate()
     }

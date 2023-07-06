@@ -18,6 +18,12 @@ export class SearchBase {
     this.page = page;
   }
 
+  protected delay(timeout: number): Promise<Function> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, timeout)
+    })
+  }
+
   protected async grabInfo(label: string) {
     const timeout = 3000
     const fieldRow = this.page.locator('.detailRow').filter({hasText: label})

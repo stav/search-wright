@@ -117,6 +117,7 @@ export class SearchDeepPages extends SearchBase {
 
       for (const provider of providers) {
         items.push(await this.getItem(provider))
+        await this.delay(1600)
       }
       console.log('Capture providers', items.length, items[0])
       const content = JSON.stringify(items)
